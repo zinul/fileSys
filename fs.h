@@ -1,6 +1,6 @@
 #include <sys/types.h>
-#include <list.h>
-
+#include "list.h"
+//inode占48字节
 struct d_inode
 {
   unsigned short i_mode;	// 文件类型和属性(rwx 位)。
@@ -48,7 +48,7 @@ struct file
   off_t f_pos;			// 文件位置（读写偏移值）。
 };
 
-// 内存中磁盘超级块结构。
+// 内存中磁盘超级块结构。超级块占24字节
 struct super_block
 {
   unsigned short s_ninodes;	// 节点数。
