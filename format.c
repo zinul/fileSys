@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <memory.h>
+#include <stdlib.h>
 #include "fs.h"
 #define BLOCKSIZE 1024
 #define BLOCK_SIZE_BITS 10 // 数据块长度所占比特位数。
@@ -47,7 +48,6 @@ int main(int argc, char *argv[])
     }
     // for(int i=0;i<3;i++)
     //     printf("%s\n",argv[i]);
-
     if ((file_sys_size = (int)atoi(argv[2])) == -1)
     {
         printf("filesize wrong\n");
@@ -61,19 +61,19 @@ int main(int argc, char *argv[])
     i_bitmap_start = i_format(fd);
     printf("inodes has been formated\n");
     b_bitmap_start = i_bitmap_format(fd);
-    b_start = b_bitmap_format(fd);
+    b_start =b_bitmap_format(fd);
     printf("bitmap has been format\n");
     block_format(fd);
     printf("inode start:%ld\ni_bitmap_start:%ld\nb_bitmap_start:%ld\nb_start:%ld\n",
            i_start, i_bitmap_start, b_bitmap_start, b_start);
-    fflush(stdout);
     printf("inodes include %ldK;inode bitmap includes %ldK;block bitmap includes %ldK;block includes %ldK\n",
-            (i_bitmap_start-i_start)/1024,(b_bitmap_start-i_bitmap_start)/1024,(b_start-b_bitmap_start)/1024,
-            (curpos-b_start)/1024);
+           (i_bitmap_start - i_start) / 1024, (b_bitmap_start - i_bitmap_start) / 1024, (b_start - b_bitmap_start) / 1024,
+           (curpos - b_start) / 1024);
     return 0;
 }
 int block_format(int fd)
 {
+    printf("%ld",lseek(fd,0,SEEK_CUR));
     for (int i = 0; i < file_sys_size / BLOCKSIZE; i++)
     {
         set_empty_block(fd);
@@ -82,20 +82,20 @@ int block_format(int fd)
 }
 off_t i_bitmap_format(int fd)
 {
-    b_bitmap_start = set_empty_block(fd);  
+    b_bitmap_start = set_empty_block(fd);
     return curpos;
 }
 off_t b_bitmap_format(int fd)
 {
     char buf[BLOCKSIZE] = {0};
-
     b_start = set_empty_block(fd);
-    for (int i = file_sys_size / BLOCKSIZE; i < BLOCKSIZE; ++i)
+    for (int i = (file_sys_size / BLOCKSIZE); i < BLOCKSIZE; ++i)
     {
         buf[i] = 1;
     }
     // memset(&buf[file_sys_size/BLOCKSIZE],1,BLOCKSIZE-file_sys_size/BLOCKSIZE);
-    write(fd, buf, b_bitmap_start);
+    lseek(fd,-BLOCKSIZE,SEEK_CUR);
+    write(fd, buf, sizeof(buf));
     curpos = lseek(fd, 0, SEEK_CUR);
 
     return curpos;
