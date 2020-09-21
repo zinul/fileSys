@@ -1,18 +1,10 @@
-#include <fcntl.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <memory.h>
-#include <stdlib.h>
+
 #include "fs.h"
-#define BLOCKSIZE 1024
-#define BLOCK_SIZE_BITS 10 // 数据块长度所占比特位数。
-#define NR_OPEN 20
-#define NR_INODE 32
-#define NR_FILE 64
+
 //#define BLOCKCOUNT 500
 //#define INODE_SIZE 48
 int block_format(int fd);
-off_t set_empty_block(int fd);
+off_t f_set_empty_block(int fd);
 off_t b_bitmap_format(int fd);
 off_t i_bitmap_format(int fd);
 off_t i_format(int fd);
@@ -24,10 +16,11 @@ off_t b_bitmap_start;
 off_t b_start;
 off_t curpos;
 int file_sys_size;
+struct d_super_block super_block;
 int main(int argc, char *argv[])
 {
     int fd;
-    struct d_super_block super_block;
+    
     //struct d_inode *inode;
     if (argc != 3)
     {
@@ -73,22 +66,21 @@ int main(int argc, char *argv[])
 }
 int block_format(int fd)
 {
-    printf("%ld",lseek(fd,0,SEEK_CUR));
     for (int i = 0; i < file_sys_size / BLOCKSIZE; i++)
     {
-        set_empty_block(fd);
+        f_set_empty_block(fd);
     }
     return 0;
 }
 off_t i_bitmap_format(int fd)
 {
-    b_bitmap_start = set_empty_block(fd);
+    b_bitmap_start = f_set_empty_block(fd);
     return curpos;
 }
 off_t b_bitmap_format(int fd)
 {
     char buf[BLOCKSIZE] = {0};
-    b_start = set_empty_block(fd);
+    b_start = f_set_empty_block(fd);
     for (int i = (file_sys_size / BLOCKSIZE); i < BLOCKSIZE; ++i)
     {
         buf[i] = 1;
@@ -103,15 +95,15 @@ off_t b_bitmap_format(int fd)
 off_t s_format(int fd, long file_sys_size, struct d_super_block *super_block)
 {
 
-    super_block->s_ninodes = 0;
+    super_block->s_ninodes = NINODES;
     super_block->s_imap_blocks = 1;
     super_block->s_zmap_blocks = 1;
-    super_block->s_firstdatazone = 2;
-    super_block->s_nzones = (file_sys_size / BLOCKSIZE) - super_block->s_imap_blocks - super_block->s_zmap_blocks - sizeof(struct d_inode);
+    super_block->s_firstdatazone = super_block->s_ninodes+super_block->s_imap_blocks+super_block->s_zmap_blocks+1;
+    super_block->s_nzones = file_sys_size / BLOCKSIZE;
     super_block->s_max_size = 7 * BLOCKSIZE + (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE +
                               (BLOCKSIZE / sizeof(unsigned short)) * (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE;
     curpos = lseek(fd, 0, SEEK_SET);
-    set_empty_block(fd);
+    f_set_empty_block(fd);
     lseek(fd, 0, SEEK_SET);
     write(fd, super_block, sizeof(super_block));
     curpos = lseek(fd, BLOCKSIZE, SEEK_SET);
@@ -119,13 +111,13 @@ off_t s_format(int fd, long file_sys_size, struct d_super_block *super_block)
 }
 off_t i_format(int fd)
 {
-    for (int i = 0; i < file_sys_size / BLOCKSIZE; ++i)
+    for (int i = 0; i < (NINODES*INODESIZE/BLOCKSIZE+1); ++i)
     {
-        set_empty_block(fd);
+        f_set_empty_block(fd);
     }
     return curpos;
 }
-off_t set_empty_block(int fd)
+off_t f_set_empty_block(int fd)
 {
     char empty_block[BLOCKSIZE] = {0};
     write(fd, empty_block, sizeof(empty_block));

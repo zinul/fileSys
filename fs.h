@@ -1,5 +1,22 @@
 #include <sys/types.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <memory.h>
+#include <stdlib.h>
 #include "list.h"
+
+#define INODEPOS 1024
+#define IBITMAPOS 6144
+#define BBITMAPOS 7168
+#define BLOCKPOS 8192
+#define BLOCKSIZE 1024
+#define BLOCK_SIZE_BITS 10 // 数据块长度所占比特位数。
+#define NR_OPEN 20
+#define NR_INODE 32
+#define NR_FILE 64
+#define NINODES 100
+#define INODESIZE 48
 //inode占48字节
 struct d_inode
 {
@@ -64,13 +81,13 @@ struct super_block
 //   struct buffer_head *s_imap[8];	// i 节点位图缓冲块指针数组(占用8 块，可表示64M)。
 //   struct buffer_head *s_zmap[8];	// 逻辑块位图缓冲块指针数组（占用8 块）。
 //   unsigned short s_dev;		// 超级块所在的设备号。
-  struct m_inode *s_isup;	// 被安装的文件系统根目录的i 节点。(isup-super i)
-  struct m_inode *s_imount;	// 被安装到的i 节点。
-  unsigned long s_time;		// 修改时间。
-//  struct task_struct *s_wait;	// 等待该超级块的进程。
-  unsigned char s_lock;		// 被锁定标志。
-  unsigned char s_rd_only;	// 只读标志。
-  unsigned char s_dirt;		// 已修改(脏)标志。
+//   struct m_inode *s_isup;	// 被安装的文件系统根目录的i 节点。(isup-super i)
+//   struct m_inode *s_imount;	// 被安装到的i 节点。
+//   unsigned long s_time;		// 修改时间。
+// //  struct task_struct *s_wait;	// 等待该超级块的进程。
+//   unsigned char s_lock;		// 被锁定标志。
+//   unsigned char s_rd_only;	// 只读标志。
+//   unsigned char s_dirt;		// 已修改(脏)标志。
 };
 
 // 磁盘上超级块结构。上面125-132 行完全一样。
@@ -86,6 +103,11 @@ struct d_super_block
 //  unsigned short s_magic;	// 文件系统魔数。
 };
 
+extern int my_alloc(int fd);
+extern int my_free(int fd,int blk_cnt);
+extern void set_empty_block(int fd,off_t pos);
+extern int my_read(int fd, off_t pos, int whence, const void *buf, size_t n);
+extern int my_write(int fd, off_t pos, int whence, const void *buf, size_t n);
 
 // //// 以下是文件系统操作管理用的函数原型。
 // // 将i 节点指定的文件截为0。
