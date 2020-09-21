@@ -1,6 +1,6 @@
 
 #include "fs.h"
-
+#include <dirent.h>
 //#define BLOCKCOUNT 500
 //#define INODE_SIZE 48
 int block_format(int fd);
@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
     {
         return -1;
     }
+    chdir("/home/zmz/fileSys");
     if ((fd = creat(argv[1], 0700)) == -1)
     {
         printf("file has been create\n");
@@ -102,6 +103,7 @@ off_t s_format(int fd, long file_sys_size, struct d_super_block *super_block)
     super_block->s_nzones = file_sys_size / BLOCKSIZE;
     super_block->s_max_size = 7 * BLOCKSIZE + (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE +
                               (BLOCKSIZE / sizeof(unsigned short)) * (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE;
+    super_block->s_rember_node = 0;                    
     curpos = lseek(fd, 0, SEEK_SET);
     f_set_empty_block(fd);
     lseek(fd, 0, SEEK_SET);

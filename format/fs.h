@@ -5,6 +5,7 @@
 #include <memory.h>
 #include <stdlib.h>
 //#include "list.h"
+#include <time.h>
 
 #define INODEPOS 1024
 #define IBITMAPOS 6144
@@ -110,7 +111,10 @@ extern int my_free(int fd,int blk_cnt);
 extern void set_empty_block(int fd,off_t pos);
 extern int my_read(int fd, off_t pos, int whence, const void *buf, size_t n);
 extern int my_write(int fd, off_t pos, int whence, const void *buf, size_t n);
-
+extern struct d_inode *my_iget(int fd,unsigned short inode_cnt);
+extern void my_iput(int fd, struct d_inode *inode, unsigned short inode_cnt);
+extern struct d_inode *my_ialloc(int fd);
+extern int my_ifree(int fd, unsigned short inode_cnt);
 // //// 以下是文件系统操作管理用的函数原型。
 // // 将i 节点指定的文件截为0。
 // extern void truncate (struct m_inode *inode);

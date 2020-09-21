@@ -1,6 +1,7 @@
 #include "list.h"
 #include "fs.h"
 #include <stdio.h>
+struct super_block super_block;
 int main(int argc,char *argv[])
 {
     int fd;
