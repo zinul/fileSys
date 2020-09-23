@@ -58,6 +58,11 @@ struct d_inode *my_iget(int fd, unsigned short inode_cnt)
 {
     // char inodes_map[BLOCKSIZE];
     // int count;
+    if(!getInodeBit(fd,inode_cnt))
+    {
+        printf("inode%d is null\n",inode_cnt);
+        return NULL;
+    }
     struct d_inode *inode = (struct d_inode *)malloc(sizeof(struct d_inode));
 
     if (my_read(fd, inode_cnt * INODESIZE + INODEPOS, SEEK_SET, inode, BLOCKSIZE) == -1)
@@ -192,4 +197,16 @@ struct d_inode *my_namei(int fd, const char *path)
         }
     }
     return work_inode; 
+}
+int getBlockBit(int fd,unsigned short cnt)
+{
+    char buf[BLOCKSIZE];
+    my_read(fd,BBITMAPOS,SEEK_SET,buf,BLOCKSIZE);
+    return buf[cnt];
+}
+int getInodeBit(int fd,unsigned short cnt)
+{
+    char buf[BLOCKSIZE];
+    my_read(fd,IBITMAPOS,SEEK_SET,buf,BLOCKSIZE);
+    return buf[cnt];
 }

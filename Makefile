@@ -22,7 +22,7 @@ $(OUTPUT2):$(OBJS)
 	./$(OUTPUT2) bigFile 102400
 %.o:%.c
 	gcc  -c $<
-
+	
 clean:
 	-rm -f $(OUTPUTLIST)
 	-rm -f *.o

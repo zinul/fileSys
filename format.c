@@ -16,12 +16,13 @@ off_t b_bitmap_start;
 off_t b_start;
 off_t curpos;
 int file_sys_size;
-struct d_super_block super_block;
 #ifdef _FORMAT_
+
+struct d_super_block super_block;
 int main(int argc, char *argv[])
 {
     int fd;
-
+    
     //struct d_inode *inode;
     if (argc != 3)
     {
@@ -41,6 +42,7 @@ int main(int argc, char *argv[])
             return -1;
         }
     }
+    my_read(fd,0,SEEK_SET,&super_block,sizeof(struct d_super_block));
     // for(int i=0;i<3;i++)
     //     printf("%s\n",argv[i]);
     if ((file_sys_size = (int)atoi(argv[2])) == -1)
@@ -62,8 +64,8 @@ int main(int argc, char *argv[])
     b_start = i_format(fd);
     printf("bitmap has been format\n");
     block_format(fd);
-    // printf("inode start:%ld\ni_bitmap_start:%ld\nb_bitmap_start:%ld\nb_start:%ld\n",
-    //        i_start, i_bitmap_start, b_bitmap_start, b_start);
+    printf("inode start:%ld\ni_bitmap_start:%ld\nb_bitmap_start:%ld\nb_start:%ld\n",
+           i_start, i_bitmap_start, b_bitmap_start, b_start);
     // printf("inodes include %ldK;inode bitmap includes %ldK;block bitmap includes %ldK;block includes %ldK\n",
     //        (i_bitmap_start - i_start) / 1024, (b_bitmap_start - i_bitmap_start) / 1024, (b_start - b_bitmap_start) / 1024,
     //        (curpos - b_start) / 1024);
@@ -74,6 +76,7 @@ int block_format(int fd)
 {
     for (int i = 0; i < file_sys_size / BLOCKSIZE; i++)
     {
+        lseek(fd,BLOCKSIZE,SEEK_CUR);
         f_set_empty_block(fd);
     }
     return 0;
@@ -91,7 +94,6 @@ off_t b_bitmap_format(int fd)
     {
         buf[i] = 1;
     }
-    buf[0] = 1;
     // memset(&buf[file_sys_size/BLOCKSIZE],1,BLOCKSIZE-file_sys_size/BLOCKSIZE);
     lseek(fd, -BLOCKSIZE, SEEK_CUR);
     write(fd, buf, sizeof(buf));
@@ -102,11 +104,10 @@ off_t b_bitmap_format(int fd)
 off_t s_format(int fd, long file_sys_size, struct d_super_block *super_block)
 {
 
-    super_block->s_ninodes = NINODES;
+    super_block->s_ninodes = 0;
     super_block->s_imap_blocks = 1;
     super_block->s_zmap_blocks = 1;
-    super_block->s_firstdatazone = super_block->s_ninodes + super_block->s_imap_blocks + super_block->s_zmap_blocks + 1;
-    super_block->s_nzones = file_sys_size / BLOCKSIZE;
+    super_block->s_nzones = 0;
     super_block->s_max_size = 7 * BLOCKSIZE + (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE +
                               (BLOCKSIZE / sizeof(unsigned short)) * (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE;
     super_block->s_rember_node = 0;
@@ -122,6 +123,7 @@ off_t i_format(int fd)
     struct d_inode *inode;
     unsigned short inode_cnt;
     struct dir root;
+    struct dir temp;
     // void *buf=malloc(sizeof(char)*BLOCKSIZE);
     // my_read(fd,INODEPOS,SEEK_SET,buf,BLOCKSIZE);
 
@@ -146,7 +148,9 @@ off_t i_format(int fd)
     strcpy(root.item[0].name,".");
     root.item[1].inode_cnt=0;
     strcpy(root.item[1].name,"..");
-    my_write(fd,inode->i_zone[0]*BLOCKSIZE+BLOCKPOS,SEEK_SET,&root,sizeof(root));
+    root.item[2].inode_cnt=0xFFFF;
+    
+    my_write(fd,inode->i_zone[0]*BLOCKSIZE+BLOCKPOS,SEEK_SET,&root,sizeof(struct dir));
 
     lseek(fd, curpos, SEEK_SET);
     return curpos;
