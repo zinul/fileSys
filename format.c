@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
         }
     }
     my_read(fd,0,SEEK_SET,&super_block,sizeof(struct d_super_block));
-    // for(int i=0;i<3;i++)
-    //     printf("%s\n",argv[i]);
+
     if ((file_sys_size = (int)atoi(argv[2])) == -1)
     {
         printf("filesize wrong\n");
@@ -57,18 +56,16 @@ int main(int argc, char *argv[])
     printf("super block has been formated\n");
 
     b_bitmap_start = i_bitmap_format(fd);
-
     printf("inodes has been formated\n");
-    i_start = b_bitmap_format(fd);
 
+    i_start = b_bitmap_format(fd);
     b_start = i_format(fd);
     printf("bitmap has been format\n");
+    
     block_format(fd);
     printf("inode start:%ld\ni_bitmap_start:%ld\nb_bitmap_start:%ld\nb_start:%ld\n",
            i_start, i_bitmap_start, b_bitmap_start, b_start);
-    // printf("inodes include %ldK;inode bitmap includes %ldK;block bitmap includes %ldK;block includes %ldK\n",
-    //        (i_bitmap_start - i_start) / 1024, (b_bitmap_start - i_bitmap_start) / 1024, (b_start - b_bitmap_start) / 1024,
-    //        (curpos - b_start) / 1024);
+    
     return 0;
 }
 #endif
@@ -94,7 +91,6 @@ off_t b_bitmap_format(int fd)
     {
         buf[i] = 1;
     }
-    // memset(&buf[file_sys_size/BLOCKSIZE],1,BLOCKSIZE-file_sys_size/BLOCKSIZE);
     lseek(fd, -BLOCKSIZE, SEEK_CUR);
     write(fd, buf, sizeof(buf));
     curpos = lseek(fd, 0, SEEK_CUR);

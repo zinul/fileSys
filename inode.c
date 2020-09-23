@@ -1,6 +1,8 @@
 #include "fs.h"
 
-extern struct super_block super_block;
+extern struct file fileTable[];  
+extern int fileTableCount;
+extern struct d_super_block super_block;
 unsigned short my_ialloc(int fd)
 {
     int count;
@@ -56,8 +58,6 @@ int my_ifree(int fd, unsigned short inode_cnt)
 
 struct d_inode *my_iget(int fd, unsigned short inode_cnt)
 {
-    // char inodes_map[BLOCKSIZE];
-    // int count;
     if(!getInodeBit(fd,inode_cnt))
     {
         printf("inode%d is null\n",inode_cnt);
@@ -70,12 +70,11 @@ struct d_inode *my_iget(int fd, unsigned short inode_cnt)
         printf("iget_read error\n");
         return NULL;
     }
-    //inode->i_time = time(NULL);
-    if (my_write(fd, inode_cnt * INODESIZE + INODEPOS, SEEK_SET, inode, BLOCKSIZE) == -1)
-    {
-        printf("iget_write error\n");
-        return NULL;
-    }
+    // if (my_write(fd, inode_cnt * INODESIZE + INODEPOS, SEEK_SET, inode, BLOCKSIZE) == -1)
+    // {
+    //     printf("iget_write error\n");
+    //     return NULL;
+    // }
 
     return inode;
 }
@@ -171,7 +170,7 @@ struct d_inode *my_namei(int fd, const char *path)
     }
     while (temp = strtok(NULL, delim))
     {
-        if(work_inode->i_mode&O_DIRECTORY&O_RDONLY)
+        if((work_inode->i_mode&(O_DIRECTORY|O_RDONLY))==(O_DIRECTORY|O_RDONLY))
         {
             my_read(fd,BLOCKPOS+work_inode->i_zone[0]*BLOCKSIZE,SEEK_SET,&work_dir,sizeof(work_dir));
             if(work_dir.item[0].inode_cnt==0&&strcmp(temp,".."))

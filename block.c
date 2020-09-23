@@ -1,5 +1,8 @@
 #include "fs.h"
-extern struct super_block super_block;
+
+extern struct file fileTable[];  
+extern int fileTableCount;
+extern struct d_super_block super_block;
 int my_alloc(int fd)
 {
     int block_pos;

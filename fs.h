@@ -17,6 +17,9 @@
 #define NR_FILE 64
 #define NINODES 100
 #define INODESIZE 48
+
+
+
 //inode占48字节
 struct d_inode
 {
@@ -61,7 +64,7 @@ struct file
   unsigned short f_mode;	// 文件操作模式（RW 位）
   unsigned short f_flags;	// 文件打开和控制的标志。
   unsigned short f_count;	// 对应文件句柄（文件描述符）数。
-  struct m_inode *f_inode;	// 指向对应i 节点。
+  struct d_inode *f_inode;	// 指向对应i 节点。
   off_t f_pos;			// 文件位置（读写偏移值）。
 };
 
@@ -118,6 +121,8 @@ extern int my_free(int fd,int blk_cnt);
 extern void set_empty_block(int fd,off_t pos);
 extern int my_read(int fd, off_t pos, int whence, const void *buf, size_t n);
 extern int my_write(int fd, off_t pos, int whence, const void *buf, size_t n);
+extern int free_all_blocks(int fd, struct d_inode *inode);
+
 extern struct d_inode *my_iget(int fd, unsigned short inode_cnt);
 extern void my_iput(int fd, struct d_inode *inode, unsigned short inode_cnt);
 extern int my_ifree(int fd, unsigned short inode_cnt);
