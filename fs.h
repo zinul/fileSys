@@ -5,10 +5,10 @@
 #include <memory.h>
 #include <stdlib.h>
 //#include "list.h"
-
-#define INODEPOS 1024
-#define IBITMAPOS 6144
-#define BBITMAPOS 7168
+#define IROOT 0
+#define INODEPOS 3072
+#define IBITMAPOS 1024
+#define BBITMAPOS 2048
 #define BLOCKPOS 8192
 #define BLOCKSIZE 1024
 #define BLOCK_SIZE_BITS 10 // 数据块长度所占比特位数。
@@ -104,13 +104,25 @@ struct d_super_block
   unsigned long s_max_size;	// 文件最大长度。
 //  unsigned short s_magic;	// 文件系统魔数。
 };
-
+struct dir_item 
+{
+  char name[14];
+  unsigned short inode_cnt;
+};
+struct dir
+{
+  struct dir_item item[BLOCKSIZE/sizeof(struct dir_item)];
+};
 extern int my_alloc(int fd);
 extern int my_free(int fd,int blk_cnt);
 extern void set_empty_block(int fd,off_t pos);
 extern int my_read(int fd, off_t pos, int whence, const void *buf, size_t n);
 extern int my_write(int fd, off_t pos, int whence, const void *buf, size_t n);
-
+extern struct d_inode *my_iget(int fd, unsigned short inode_cnt);
+extern void my_iput(int fd, struct d_inode *inode, unsigned short inode_cnt);
+extern int my_ifree(int fd, unsigned short inode_cnt);
+unsigned short my_ialloc(int fd);
+extern off_t my_bmap(int fd,struct d_inode *inode,off_t offset);
 // //// 以下是文件系统操作管理用的函数原型。
 // // 将i 节点指定的文件截为0。
 // extern void truncate (struct m_inode *inode);
