@@ -30,15 +30,15 @@ unsigned short my_ialloc(int fd)
     }
     return 0;
 }
-int my_ifree(int fd, unsigned short inode_cnt)
+int my_ifree(int fd,struct d_inode *inode)
 {
     char inode_map[BLOCKSIZE];
 
     super_block.s_ninodes++;
 
-    if (super_block.s_rember_node > inode_cnt)
+    if (super_block.s_rember_node > inode->i_cnt)
     {
-        super_block.s_rember_node = inode_cnt;
+        super_block.s_rember_node = inode->i_cnt;
     }
     my_write(fd, 0, SEEK_SET, &super_block, sizeof(super_block));
 
@@ -47,7 +47,7 @@ int my_ifree(int fd, unsigned short inode_cnt)
         printf("ifree_read error");
         return -1;
     }
-    inode_map[inode_cnt] = 0;
+    inode_map[inode->i_cnt] = 0;
     if (my_write(fd, IBITMAPOS, SEEK_SET, inode_map, BLOCKSIZE) == -1)
     {
         printf("ifree_write error\n");
@@ -78,7 +78,7 @@ struct d_inode *my_iget(int fd, unsigned short inode_cnt)
 
     return inode;
 }
-void my_iput(int fd, struct d_inode *inode, unsigned short inode_cnt)
+void my_iput(int fd, struct d_inode *inode)
 {
     // if (--inode->i_nlinks == 0)
     // {
@@ -89,7 +89,7 @@ void my_iput(int fd, struct d_inode *inode, unsigned short inode_cnt)
     //     inode->i_mode = 0;
     //     my_ifree(fd, inode_cnt);
     // }
-    my_write(fd, INODEPOS + INODESIZE * inode_cnt, SEEK_SET, inode, INODESIZE);
+    my_write(fd, INODEPOS + INODESIZE * inode->i_cnt, SEEK_SET, inode, INODESIZE);
     free(inode);
     return;
 }
@@ -127,7 +127,7 @@ off_t my_bmap(int fd, struct d_inode *inode, off_t offset)
     free(indirect_buf);
     return pos;
 }
-char *trim(const char *str)
+char *trim(char *str)
 {
     int len = strlen(str);
     char *temp = (char *)malloc(len);
@@ -144,7 +144,9 @@ char *trim(const char *str)
         }
     }
     temp[j] = '\0';
-    return temp;
+    strcpy(str,temp);
+    free(temp);
+    return str;
 }
 struct d_inode *my_namei(int fd, const char *path)
 {
@@ -180,14 +182,14 @@ struct d_inode *my_namei(int fd, const char *path)
             for(int i=0;i<BLOCKSIZE/sizeof(struct dir_item);++i)
             {
                 unsigned short cnt=work_dir.item[i].inode_cnt;
-                if(cnt==0xFFFF||i==(BLOCKSIZE/sizeof(struct dir_item)-1))
+                if(i==(BLOCKSIZE/sizeof(struct dir_item)-1))
                 {
                     printf("no dir or file name is %s",temp);
                     return NULL;
                 }
                 else if(strcmp(work_dir.item[i].name,temp))
                 {
-                    my_iput(fd,work_inode,work_dir.item[0].inode_cnt);
+                    my_iput(fd,work_inode);
                     work_inode = my_iget(fd,cnt);
                     break;
                 }

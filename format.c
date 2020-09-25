@@ -16,8 +16,10 @@ off_t b_bitmap_start;
 off_t b_start;
 off_t curpos;
 int file_sys_size;
-#ifdef _FORMAT_
 
+struct d_super_block super_block;
+struct file fileTable[100];  
+int fileTableCount=0;
 struct d_super_block super_block;
 int main(int argc, char *argv[])
 {
@@ -68,7 +70,6 @@ int main(int argc, char *argv[])
     
     return 0;
 }
-#endif
 int block_format(int fd)
 {
     for (int i = 0; i < file_sys_size / BLOCKSIZE; i++)
@@ -138,13 +139,18 @@ off_t i_format(int fd)
     inode->i_nlinks = 1;
     inode->i_size = BLOCKSIZE;
     inode->i_zone[0] = my_alloc(fd);
-    my_iput(fd, inode, inode_cnt);
+    inode->i_cnt=0;
+    my_iput(fd, inode);
 
     root.item[0].inode_cnt=0;
     strcpy(root.item[0].name,".");
     root.item[1].inode_cnt=0;
     strcpy(root.item[1].name,"..");
-    root.item[2].inode_cnt=0xFFFF;
+    for(int i=2;i<BLOCKSIZE/sizeof(struct dir_item);++i)
+    {
+        root.item[2].inode_cnt=0xFFFF;
+    }
+    
     
     my_write(fd,inode->i_zone[0]*BLOCKSIZE+BLOCKPOS,SEEK_SET,&root,sizeof(struct dir));
 

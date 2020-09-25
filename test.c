@@ -6,7 +6,7 @@ void psuper_block(int fd);
 struct file fileTable[100];  
 int fileTableCount=0;
 struct d_super_block super_block;
-#ifdef _TEST_
+
 int main(int argc,char *argv[])
 {
     //super_block=(struct d_super_block *)malloc(sizeof(struct d_super_block));
@@ -38,7 +38,6 @@ int main(int argc,char *argv[])
     my_read(fd,inode->i_zone[0]*BLOCKSIZE+BLOCKPOS,SEEK_SET,&dir,sizeof(struct dir));
     printDir(fd,dir);
 }
-#endif
 struct dir *getDir(int fd,struct d_inode *inode)
 {
     //struct d_inode *lnode = (struct d_inode *)malloc(sizeof(struct d_inode));

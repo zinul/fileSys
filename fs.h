@@ -26,7 +26,7 @@ struct d_inode
   unsigned short i_mode;	// 文件类型和属性(rwx 位)。
   unsigned short i_uid;		// 用户id（文件拥有者标识符）。
   unsigned long i_size;		// 文件大小（字节数）。
-  unsigned long i_time;		// 修改时间（自1970.1.1:0 算起，秒）。
+  unsigned short i_cnt;		// inode编号
   unsigned char i_gid;		// 组id(文件拥有者所在的组)。
   unsigned char i_nlinks;	// 链接数（多少个文件目录项指向该i 节点）。
   unsigned short i_zone[9];	// 直接(0-6)、间接(7)或双重间接(8)逻辑块号。
@@ -124,14 +124,15 @@ extern int my_write(int fd, off_t pos, int whence, const void *buf, size_t n);
 extern int free_all_blocks(int fd, struct d_inode *inode);
 
 extern struct d_inode *my_iget(int fd, unsigned short inode_cnt);
-extern void my_iput(int fd, struct d_inode *inode, unsigned short inode_cnt);
-extern int my_ifree(int fd, unsigned short inode_cnt);
+extern void my_iput(int fd, struct d_inode *inode);
+extern int my_ifree(int fd, struct d_inode *inode);
 extern unsigned short my_ialloc(int fd);
 extern off_t my_bmap(int fd,struct d_inode *inode,off_t offset);
 extern struct d_inode *my_namei(int fd, const char *path);
 extern struct dir *getDir(int fd,struct d_inode *inode);
 extern int getBlockBit(int fd,unsigned short cnt);
 extern int getInodeBit(int fd,unsigned short cnt);
+extern char *trim(char *str);
 // //// 以下是文件系统操作管理用的函数原型。
 // // 将i 节点指定的文件截为0。
 // extern void truncate (struct m_inode *inode);
