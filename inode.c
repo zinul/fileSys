@@ -1,6 +1,6 @@
 #include "fs.h"
 
-extern struct file fileTable[];  
+extern struct file fileTable[];
 extern int fileTableCount;
 extern struct d_super_block super_block;
 unsigned short my_ialloc(int fd)
@@ -14,7 +14,7 @@ unsigned short my_ialloc(int fd)
     {
         if (inodes_map[count] == 0)
         {
-            inodes_map[super_block.s_rember_node] = 1;
+            inodes_map[count] = 1;
             super_block.s_rember_node = count;
             my_write(fd, IBITMAPOS, SEEK_SET, inodes_map, BLOCKSIZE);
             printf("inodemap %d is %d\n", count, inodes_map[count]);
@@ -30,11 +30,11 @@ unsigned short my_ialloc(int fd)
     }
     return 0;
 }
-int my_ifree(int fd,struct d_inode *inode)
+int my_ifree(int fd, struct d_inode *inode)
 {
     char inode_map[BLOCKSIZE];
 
-    super_block.s_ninodes++;
+    super_block.s_ninodes--;
 
     if (super_block.s_rember_node > inode->i_cnt)
     {
@@ -58,23 +58,22 @@ int my_ifree(int fd,struct d_inode *inode)
 
 struct d_inode *my_iget(int fd, unsigned short inode_cnt)
 {
-    if(!getInodeBit(fd,inode_cnt))
+    struct d_inode *inode;
+    if (inode_cnt == ((unsigned short)(-1)))
     {
-        printf("inode%d is null\n",inode_cnt);
         return NULL;
     }
-    struct d_inode *inode = (struct d_inode *)malloc(sizeof(struct d_inode));
-
-    if (my_read(fd, inode_cnt * INODESIZE + INODEPOS, SEEK_SET, inode, BLOCKSIZE) == -1)
+    if (!getInodeBit(fd, inode_cnt))
+    {
+        printf("inode%d is null\n", inode_cnt);
+        return NULL;
+    }
+    inode = (struct d_inode *)malloc(sizeof(struct d_inode));
+    if (my_read(fd, inode_cnt * INODESIZE + INODEPOS, SEEK_SET, inode, sizeof(struct d_inode)) == -1)
     {
         printf("iget_read error\n");
         return NULL;
     }
-    // if (my_write(fd, inode_cnt * INODESIZE + INODEPOS, SEEK_SET, inode, BLOCKSIZE) == -1)
-    // {
-    //     printf("iget_write error\n");
-    //     return NULL;
-    // }
 
     return inode;
 }
@@ -89,7 +88,7 @@ void my_iput(int fd, struct d_inode *inode)
     //     inode->i_mode = 0;
     //     my_ifree(fd, inode_cnt);
     // }
-    my_write(fd, INODEPOS + INODESIZE * inode->i_cnt, SEEK_SET, inode, INODESIZE);
+    my_write(fd, INODEPOS + INODESIZE * (inode->i_cnt), SEEK_SET, inode, sizeof(struct d_inode));
     free(inode);
     return;
 }
@@ -103,6 +102,7 @@ off_t my_bmap(int fd, struct d_inode *inode, off_t offset)
     // char buf[BLOCKSIZE];
     if (offset > inode->i_size)
     {
+        printf("filesize:%d ",inode->i_size);
         printf("offset is bigger than filesize\n");
         return -1;
     }
@@ -127,87 +127,152 @@ off_t my_bmap(int fd, struct d_inode *inode, off_t offset)
     free(indirect_buf);
     return pos;
 }
-char *trim(char *str)
+char *ltrim(char *s)
 {
-    int len = strlen(str);
-    char *temp = (char *)malloc(len);
-    int j = 0;
-    for (int i = 0; i < len; i++)
+    int i = 0, j = 0;
+
+    if (s == NULL)
+        return (char *)NULL;
+
+    while (' ' == s[i] || '\t' == s[i])
+        i++;
+
+    if (0 == i)
+        return s;
+
+    while ('\0' != s[j + i])
     {
-        if (str[i] == ' ')
-        {
-            continue;
-        }
-        else
-        {
-            temp[j++] = str[i];
-        }
+        s[j] = s[j + i];
+        j++;
     }
-    temp[j] = '\0';
-    strcpy(str,temp);
-    free(temp);
-    return str;
+
+    s[j] = '\0';
+
+    return s;
 }
-struct d_inode *my_namei(int fd, const char *path)
+
+/*去除字符串右边的空格*/
+char *rtrim(char *s)
+{
+    int i;
+
+    if (s == NULL)
+        return (char *)NULL;
+
+    for (i = strlen(s); i > 0; i--)
+    {
+        if (s[i - 1] == ' ' || s[i - 1] == '\t')
+            s[i - 1] = '\0';
+        else
+            break;
+    }
+
+    return s;
+}
+
+/*去除字符串两边的空格*/
+char *trim(char *s)
+{
+    ltrim(s);
+    rtrim(s);
+    return s;
+}
+// char *trim(char *str)
+// {
+//     int len = strlen(str);
+//     int i=0;
+//     while(str[i]==' ')
+//     {
+//         i++;
+//     }
+//     int j=0;
+
+//     while(i<len&&str[i]!=' ')
+//     {
+//         if(j==i)
+//         {
+//             while(j<len&&str[++j]!=' ');
+//         printf("j=%d,len=%d,i=%d\n",j,len,i);
+//         fflush(stdout);
+//             break;
+//         }
+
+//         str[j++]=str[i++];
+
+//     }
+
+//     str[j]='\0';
+//     return str;
+
+// }
+unsigned short my_namei(int fd, char *path)
 {
     struct d_inode *work_inode;
     int len = strlen(path);
     struct dir work_dir;
-    char *temp;
     char *delim = "/";
-    temp = trim(path);
-    if (temp[0] == '/')
-    {
+    unsigned short cnt;
+    if (path[0] == '/')
+    {   
         work_inode = my_iget(fd, IROOT);
     }
     else
     {
         printf("path wrong\n");
-        return NULL;
+        return -1;
     }
-    temp = strtok(temp, delim);
-    if(temp==NULL)
+
+    path = strtok(path, delim);
+    // //fflush(stdout);
+
+    if (path == NULL)
     {
-        return work_inode;
+        return work_inode->i_cnt;
     }
-    while (temp = strtok(NULL, delim))
+    do
     {
-        if((work_inode->i_mode&(O_DIRECTORY|O_RDONLY))==(O_DIRECTORY|O_RDONLY))
+        //printf("%o\n%o\n", IS_DIR, work_inode->i_mode);
+        
+        if ((work_inode->i_mode & O_RDONLY) == O_RDONLY)
         {
-            my_read(fd,BLOCKPOS+work_inode->i_zone[0]*BLOCKSIZE,SEEK_SET,&work_dir,sizeof(work_dir));
-            if(work_dir.item[0].inode_cnt==0&&strcmp(temp,".."))
+            my_read(fd, BLOCKPOS + work_inode->i_zone[0] * BLOCKSIZE, SEEK_SET, &work_dir, sizeof(work_dir));
+            if (work_dir.item[0].inode_cnt == 0 && !strcmp(path, ".."))
             {
                 continue;
             }
-            for(int i=0;i<BLOCKSIZE/sizeof(struct dir_item);++i)
+            for (int i = 0; i < BLOCKSIZE / sizeof(struct dir_item); ++i)
             {
-                unsigned short cnt=work_dir.item[i].inode_cnt;
-                if(i==(BLOCKSIZE/sizeof(struct dir_item)-1))
+
+                cnt = work_dir.item[i].inode_cnt;
+                // printf("cnt:%o\n", cnt);
+                if (i == (BLOCKSIZE / sizeof(struct dir_item) - 1))
                 {
-                    printf("no dir or file name is %s",temp);
-                    return NULL;
+                    my_iput(fd, work_inode);
+                    printf("no dir or file name is %s\n", path);
+                    return -1;
                 }
-                else if(strcmp(work_dir.item[i].name,temp))
+                else if (!strcmp(work_dir.item[i].name, path))
                 {
-                    my_iput(fd,work_inode);
-                    work_inode = my_iget(fd,cnt);
+                    my_iput(fd, work_inode);
+                    work_inode = my_iget(fd, cnt);
+                    printf("cnt%d\n",work_inode->i_cnt);
                     break;
                 }
-                
-            }
+            }           
         }
-    }
-    return work_inode; 
+    } while (path = strtok(NULL, delim));
+    my_iput(fd,work_inode);
+    return cnt;
 }
-int getBlockBit(int fd,unsigned short cnt)
+int getBlockBit(int fd, unsigned short cnt)
 {
     char buf[BLOCKSIZE];
-    my_read(fd,BBITMAPOS,SEEK_SET,buf,BLOCKSIZE);
+    my_read(fd, BBITMAPOS, SEEK_SET, buf, BLOCKSIZE);
     return buf[cnt];
 }
-int getInodeBit(int fd,unsigned short cnt)
+int getInodeBit(int fd, unsigned short cnt)
 {
     char buf[BLOCKSIZE];
-    my_read(fd,IBITMAPOS,SEEK_SET,buf,BLOCKSIZE);
+    my_read(fd, IBITMAPOS, SEEK_SET, buf, BLOCKSIZE);
     return buf[cnt];
 }

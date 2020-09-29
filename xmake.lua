@@ -1,5 +1,5 @@
 -- add rules: debug/release
-add_rules("mode.debug", "mode.release")
+--add_rules("mode.debug", "mode.release")
 
 -- define target
 target("fileSys")
@@ -13,11 +13,12 @@ target("fileSys")
     add_files("inode.c")
     add_files("fs.c")
 
+
 -- define target
 target("test")
 
     -- set kind
-set_kind("binary")
+    set_kind("binary")
 
     -- add files
     add_files("test.c")
@@ -25,6 +26,7 @@ set_kind("binary")
     add_files("sys_call.c")
     add_files("inode.c")
     add_files("fs.c")
+
 -- define target
 target("format")
 
@@ -34,6 +36,19 @@ target("format")
     -- add files
     add_files("format.c")
     add_files("block.c")
+    add_files("inode.c")
+    add_files("fs.c")
+
+-- define target
+target("test1")
+
+    -- set kind
+    set_kind("binary")
+
+    -- add files
+    add_files("test1.c")
+    add_files("block.c")
+    add_files("sys_call.c")
     add_files("inode.c")
     add_files("fs.c")
 

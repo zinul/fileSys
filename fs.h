@@ -6,6 +6,8 @@
 #include <stdlib.h>
 //#include "list.h"
 #define IROOT 0
+
+#define SUPERBPOS 0
 #define INODEPOS 3072
 #define IBITMAPOS 1024
 #define BBITMAPOS 2048
@@ -17,7 +19,7 @@
 #define NR_FILE 64
 #define NINODES 100
 #define INODESIZE 48
-
+#define IS_DIR 1
 
 
 //inode占48字节
@@ -128,11 +130,19 @@ extern void my_iput(int fd, struct d_inode *inode);
 extern int my_ifree(int fd, struct d_inode *inode);
 extern unsigned short my_ialloc(int fd);
 extern off_t my_bmap(int fd,struct d_inode *inode,off_t offset);
-extern struct d_inode *my_namei(int fd, const char *path);
-extern struct dir *getDir(int fd,struct d_inode *inode);
+extern unsigned short my_namei(int fd, char *path);
+extern struct dir getDir(int fd,struct d_inode *inode);
 extern int getBlockBit(int fd,unsigned short cnt);
 extern int getInodeBit(int fd,unsigned short cnt);
 extern char *trim(char *str);
+
+extern int sys_open(int fd, char *pathname, unsigned short flags, unsigned short modes);
+extern size_t sys_read(int fd, int my_fd, void *buf, size_t nbytes);
+extern  size_t sys_write(int fd, int my_fd, void *buf, size_t count);
+extern off_t sys_lseek(int fd, int my_fd, off_t offset, int whence);
+extern void sys_close(int fd, int my_fd);
+extern int sys_creat(int fd, char *path, mode_t modes);
+extern void sys_unlink(int fd, char *path);
 // //// 以下是文件系统操作管理用的函数原型。
 // // 将i 节点指定的文件截为0。
 // extern void truncate (struct m_inode *inode);

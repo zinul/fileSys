@@ -30,7 +30,8 @@ int main(int argc, char *argv[])
     {
         return -1;
     }
-    chdir("/home/zmz/fileSys");
+    // chdir("/home/zmz/fileSys/build/linux/x86_64/release");
+    // chdir("/home/zmz/fileSys");
     if ((fd = creat(argv[1], 0700)) == -1)
     {
         printf("file has been create\n");
@@ -72,7 +73,7 @@ int main(int argc, char *argv[])
 }
 int block_format(int fd)
 {
-    for (int i = 0; i < file_sys_size / BLOCKSIZE; i++)
+    for (int i = 1; i < file_sys_size / BLOCKSIZE; i++)
     {
         lseek(fd,BLOCKSIZE,SEEK_CUR);
         f_set_empty_block(fd);
@@ -108,6 +109,7 @@ off_t s_format(int fd, long file_sys_size, struct d_super_block *super_block)
     super_block->s_max_size = 7 * BLOCKSIZE + (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE +
                               (BLOCKSIZE / sizeof(unsigned short)) * (BLOCKSIZE / sizeof(unsigned short)) * BLOCKSIZE;
     super_block->s_rember_node = 0;
+    printf("write over the limition%ld\n",super_block->s_max_size);
     curpos = lseek(fd, 0, SEEK_SET);
     f_set_empty_block(fd);
     lseek(fd, 0, SEEK_SET);
@@ -133,7 +135,7 @@ off_t i_format(int fd)
     }
     inode_cnt = my_ialloc(fd);
     inode = my_iget(fd, inode_cnt);
-    inode->i_mode = (unsigned short)(O_DIRECTORY | O_RDWR | O_EXCL);
+    inode->i_mode = IS_DIR|O_RDWR;
     inode->i_uid = 0;
     inode->i_gid = 0;
     inode->i_nlinks = 1;
@@ -148,13 +150,13 @@ off_t i_format(int fd)
     strcpy(root.item[1].name,"..");
     for(int i=2;i<BLOCKSIZE/sizeof(struct dir_item);++i)
     {
-        root.item[2].inode_cnt=0xFFFF;
+        root.item[i].inode_cnt=0xFFFF;
     }
     
-    
-    my_write(fd,inode->i_zone[0]*BLOCKSIZE+BLOCKPOS,SEEK_SET,&root,sizeof(struct dir));
-
-    lseek(fd, curpos, SEEK_SET);
+    lseek(fd,inode->i_zone[0]*BLOCKSIZE+curpos,SEEK_SET);
+    write(fd,&root,BLOCKSIZE);
+    // my_write(fd,inode->i_zone[0]*BLOCKSIZE+curpos,SEEK_SET,&root,sizeof(struct dir));
+    // curpos=lseek(fd, 0, SEEK_CUR);
     return curpos;
 }
 off_t f_set_empty_block(int fd)
