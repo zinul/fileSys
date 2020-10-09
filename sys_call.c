@@ -18,7 +18,7 @@ int sys_open(int fd, char *pathname, unsigned short flags, unsigned short modes)
     }
     if ((inode->i_mode & modes) != modes)
     {
-        printf("don't have permissions\n");
+        printf("don't have permissions to open\n");
         return -1;
     }
     file_item = &(fileTable[fileTableCount]);
@@ -32,6 +32,7 @@ int sys_open(int fd, char *pathname, unsigned short flags, unsigned short modes)
         if (!fileTable[i].f_inode)
         {
             fileTableCount = i;
+            break;
         }
     }
     if ((flags & O_APPEND) == O_APPEND)
@@ -51,7 +52,7 @@ size_t sys_read(int fd, int my_fd, void *buf, size_t nbytes)
     struct file *file = &fileTable[my_fd];
     if (file->f_count == (unsigned short)(-1))
     {
-        printf("file is closed\n");
+        printf("fd:%d was closed\n",my_fd);
         return 0;
     }
     if ((file->f_mode & O_RDONLY) != O_RDONLY)
@@ -102,7 +103,7 @@ size_t sys_write(int fd, int my_fd, void *buf, size_t count)
     struct file *file = &fileTable[my_fd];
     if (file->f_count == (unsigned short)(-1))
     {
-        printf("file is closed\n");
+        printf("fd:%d was closed\n",my_fd);
         return 0;
     }
     if ((file->f_mode & O_RDWR) != O_RDWR)
@@ -191,7 +192,7 @@ off_t sys_lseek(int fd, int my_fd, off_t offset, int whence)
     struct file *file = &fileTable[my_fd];
     if (file->f_count == (unsigned short)(-1))
     {
-        printf("file is closed\n");
+        printf("fd:%d was closed\n",my_fd);
         return 0;
     }
     off_t prePos = file->f_pos;
@@ -264,8 +265,7 @@ int sys_creat(int fd, char *path, mode_t modes)
 
     fileInodeCnt = my_namei(fd, path);
     if (fileInodeCnt != (unsigned short)(-1))
-    {
-        printf("dir is existed\n");
+    {        
         fileInode = my_iget(fd, fileInodeCnt);
     }
     else
@@ -306,15 +306,17 @@ int sys_creat(int fd, char *path, mode_t modes)
     }
 
     int my_fd = fileTableCount;
+    printf("fileTableCount%d\n",fileTableCount);
     fileTable[my_fd].f_inode = fileInode;
     fileTable[my_fd].f_mode = modes;
     fileTable[my_fd].f_pos = 0;
     fileTable[my_fd].f_count = 1;
     for (int i = 0; i < 100; ++i)
     {
-        if (!fileTable[i].f_inode)
+        if (fileTable[i].f_inode==NULL)
         {
             fileTableCount = i;
+            break;
         }
     }
     // my_iput(fd, fileInode);
@@ -340,7 +342,6 @@ void sys_unlink(int fd, char *filePath)
             memcpy(fileName, &filePath[i + 1], strlen(filePath) - i);
             memcpy(dirPath, filePath, i + 1);
             // dirPath[i + 1] = '\0';
-            printf("%s\n%s\n", filePath, dirPath);
             break;
         }
     }
@@ -378,7 +379,6 @@ void sys_unlink(int fd, char *filePath)
     else
     {
         my_read(fd, dirInode->i_zone[0] * BLOCKSIZE + BLOCKPOS, SEEK_SET, &dir, BLOCKSIZE);
-        printf("fileName:%s\ndirPath:%s\n", fileName, dirPath);
         for (int i = 0; i < BLOCKSIZE / sizeof(struct dir_item); ++i)
         {
             unsigned short cnt = dir.item[i].inode_cnt;

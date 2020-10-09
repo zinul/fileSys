@@ -17,15 +17,17 @@ int main(int argc, char *argv[])
     struct dir dir;
     int my_fd;
     char *str = "hello world\n";
-    //chdir("/home/zmz/fileSys");
-    //chdir("/home/zmz/fileSys/build/linux/x86_64/release");
+    for (int i = 0; i < 100; ++i)
+    {
+        fileTable[i].f_inode=NULL;
+    }
     if ((fd = open(argv[1], O_RDWR)) == -1)
     {
         printf("open error\n");
         return -1;
     }
     my_read(fd, SUPERBPOS, SEEK_SET, &super_block, sizeof(struct d_super_block));
-    psuper_block(fd);
+    psuper_block(fd); 
     my_fd=sys_creat(fd,"/first",O_RDWR);
     my_fd=sys_creat(fd,"/secend",O_RDWR);
     my_fd=sys_creat(fd,"/third",O_RDWR);
@@ -49,23 +51,23 @@ int main(int argc, char *argv[])
     sys_unlink(fd,"/third");
 
     my_read(fd, IBITMAPOS, SEEK_SET, blockSizeBuf, BLOCKSIZE);
+    printf("inode bitmap:\ncount\tstatus\t\n");
     for (int i = 0; i < 10; i++)
     {
-        printf("%d:%d@\n", i, blockSizeBuf[i]);
+        printf("%d\t%d\t\n", i, blockSizeBuf[i]);
     }
 
     my_read(fd, BBITMAPOS, SEEK_SET, blockSizeBuf, BLOCKSIZE);
+    printf("block bitmap:\ncount\tstatus\t\n");
     for (int i = 0; i < 10; i++)
     {
-        printf("%d:%d@\n", i, blockSizeBuf[i]);
+        printf("%d\t%d\t\n", i, blockSizeBuf[i]);
     }
-//buf = malloc(strlen(str) + 1);
-    dir=getDir(fd,inode);
-    
 
-    // inode = my_iget(fd, 0);
-    // my_read(fd, inode->i_zone[0] * BLOCKSIZE + BLOCKPOS, SEEK_SET, &dir, sizeof(struct dir));
+    dir=getDir(fd,inode);
+    printf("root dir:\n");
     printDir(fd, dir);
+   
 }
 struct dir getDir(int fd, struct d_inode *inode)
 {
@@ -77,9 +79,9 @@ void psuper_block(int fd)
 {
     printf("block use %d\n", super_block.s_nzones);
     printf("inode use %d\n", super_block.s_ninodes);
-    printf("first block%d\n", super_block.s_firstdatazone);
+    printf("first block %d\n", super_block.s_firstdatazone);
     printf("remembernode %d\n", super_block.s_rember_node);
-    printf("file max size %ld\n", super_block.s_max_size);
+    printf("file max size %ld\n\n", super_block.s_max_size);
 }
 int printDir(int fd, struct dir dir)
 {
@@ -90,7 +92,7 @@ int printDir(int fd, struct dir dir)
         {
             break;
         }
-        printf("name:%s inode_cnt:%d\n", dir.item[i].name, dir.item[i].inode_cnt);
+        printf("name:%10s\t\tinode:%d\n", dir.item[i].name, dir.item[i].inode_cnt);
     }
     return 0;
 }

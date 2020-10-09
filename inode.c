@@ -17,7 +17,7 @@ unsigned short my_ialloc(int fd)
             inodes_map[count] = 1;
             super_block.s_rember_node = count;
             my_write(fd, IBITMAPOS, SEEK_SET, inodes_map, BLOCKSIZE);
-            printf("inodemap %d is %d\n", count, inodes_map[count]);
+            printf("alloc inode%d:\n", count);
             super_block.s_ninodes++;
             my_write(fd, 0, SEEK_SET, &super_block, sizeof(super_block));
             return count;
@@ -79,15 +79,6 @@ struct d_inode *my_iget(int fd, unsigned short inode_cnt)
 }
 void my_iput(int fd, struct d_inode *inode)
 {
-    // if (--inode->i_nlinks == 0)
-    // {
-    //     for (int i = 0; i < 9; i++)
-    //     {
-    //         my_free(fd, inode->i_zone[i]);
-    //     }
-    //     inode->i_mode = 0;
-    //     my_ifree(fd, inode_cnt);
-    // }
     my_write(fd, INODEPOS + INODESIZE * (inode->i_cnt), SEEK_SET, inode, sizeof(struct d_inode));
     free(inode);
     return;
@@ -177,34 +168,7 @@ char *trim(char *s)
     rtrim(s);
     return s;
 }
-// char *trim(char *str)
-// {
-//     int len = strlen(str);
-//     int i=0;
-//     while(str[i]==' ')
-//     {
-//         i++;
-//     }
-//     int j=0;
 
-//     while(i<len&&str[i]!=' ')
-//     {
-//         if(j==i)
-//         {
-//             while(j<len&&str[++j]!=' ');
-//         printf("j=%d,len=%d,i=%d\n",j,len,i);
-//         fflush(stdout);
-//             break;
-//         }
-
-//         str[j++]=str[i++];
-
-//     }
-
-//     str[j]='\0';
-//     return str;
-
-// }
 unsigned short my_namei(int fd, char *path)
 {
     struct d_inode *work_inode;
@@ -248,14 +212,12 @@ unsigned short my_namei(int fd, char *path)
                 if (i == (BLOCKSIZE / sizeof(struct dir_item) - 1))
                 {
                     my_iput(fd, work_inode);
-                    printf("no dir or file name is %s\n", path);
                     return -1;
                 }
                 else if (!strcmp(work_dir.item[i].name, path))
                 {
                     my_iput(fd, work_inode);
                     work_inode = my_iget(fd, cnt);
-                    printf("cnt%d\n",work_inode->i_cnt);
                     break;
                 }
             }           
